@@ -17,18 +17,18 @@ function RenderCommentContent({ content, comment }: { content: string; comment: 
     const rest = content.slice(match[0].length);
     // 尝试找到被回复的作者信息
     return (
-      <div className="text-sm text-gray-700 mt-1">
-        <span className="text-gray-400">回复 </span>
+      <div className="text-sm text-dark-text mt-1">
+        <span className="text-dark-muted">回复 </span>
         <Link to={`/?tag=`} onClick={(e) => e.preventDefault()}
           className="text-primary-400 hover:text-primary-500 hover:underline font-medium">
           @{mentionName}
         </Link>
-        <span className="text-gray-400">：</span>
-        <MarkdownContent content={rest} className="inline" />
+        <span className="text-dark-muted">：</span>
+        <MarkdownContent content={rest} className="inline text-dark-text" />
       </div>
     );
   }
-  return <MarkdownContent content={content} className="text-sm text-gray-700 mt-1" />;
+  return <MarkdownContent content={content} className="text-sm text-dark-text mt-1" />;
 }
 
 function CommentTree({ comment, depth = 0, maxDepth = 3, onLike }: {
@@ -36,7 +36,7 @@ function CommentTree({ comment, depth = 0, maxDepth = 3, onLike }: {
   onLike: (commentId: number) => void;
 }) {
   return (
-    <div className={`${depth > 0 ? "ml-8 border-l-2 border-gray-100 pl-4" : ""}`}>
+    <div className={`${depth > 0 ? "ml-8 border-l-2 border-dark-border pl-4" : ""}`}>
       <div className="flex gap-3 py-3">
         <Link to={`/user/${comment.author_id}`}>
           {comment.author ? (
@@ -51,21 +51,21 @@ function CommentTree({ comment, depth = 0, maxDepth = 3, onLike }: {
           <div className="flex items-center gap-2 text-sm">
             {comment.author ? (
               <UserHoverCard user={comment.author}>
-                <Link to={`/user/${comment.author_id}`} className="font-medium text-gray-800 hover:text-primary">
+                <Link to={`/user/${comment.author_id}`} className="font-medium text-dark-text hover:text-primary-500">
                   {comment.author.username}
                 </Link>
               </UserHoverCard>
             ) : (
-              <span className="font-medium text-gray-800">用户#{comment.author_id}</span>
+              <span className="font-medium text-dark-text">用户#{comment.author_id}</span>
             )}
-            <span className="text-xs text-gray-400">{dayjs(comment.created_at).format("MM-DD HH:mm")}</span>
+            <span className="text-xs text-dark-muted">{dayjs(comment.created_at).format("MM-DD HH:mm")}</span>
           </div>
           <RenderCommentContent content={comment.content} comment={comment} />
           {/* 点赞按钮 */}
           <button
             onClick={() => onLike(comment.id)}
             className={`mt-1.5 flex items-center gap-1 text-xs transition-colors ${
-              comment.like_count > 0 ? "text-primary-500" : "text-gray-400 hover:text-primary-500"
+              comment.like_count > 0 ? "text-primary-500" : "text-dark-muted hover:text-primary-500"
             }`}
           >
             <ThumbsUp className="w-3.5 h-3.5" />
@@ -77,7 +77,7 @@ function CommentTree({ comment, depth = 0, maxDepth = 3, onLike }: {
         <CommentTree key={r.id} comment={r} depth={depth + 1} maxDepth={maxDepth} onLike={onLike} />
       ))}
       {depth >= maxDepth - 1 && comment.replies && comment.replies.length > 0 && (
-        <p className="text-xs text-gray-400 ml-8 py-1">
+        <p className="text-xs text-dark-muted ml-8 py-1">
           还有 {comment.replies.length} 条更深层回复…
         </p>
       )}
@@ -183,10 +183,10 @@ export default function PostDetailPage() {
   };
 
   if (loading) {
-    return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary-500" /></div>;
   }
   if (!post) {
-    return <div className="text-center py-20 text-gray-400">帖子不存在</div>;
+    return <div className="text-center py-20 text-dark-muted">帖子不存在</div>;
   }
 
   const isHotNews = post.author?.username === "热点快讯";
@@ -195,20 +195,20 @@ export default function PostDetailPage() {
     <div className="max-w-3xl mx-auto">
       {/* 吸顶标题栏（紧贴 Navbar 下方） */}
       {stickyVisible && (
-        <div className="fixed top-14 left-0 right-0 z-40 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
+        <div className="fixed top-14 left-0 right-0 z-40 bg-dark-card/95 backdrop-blur border-b border-dark-border">
           <div className="max-w-3xl mx-auto px-4 py-2 flex items-center gap-3">
-            <Link to="/" className="text-gray-400 hover:text-primary shrink-0">
+            <Link to="/" className="text-dark-muted hover:text-primary-500 shrink-0">
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <h2 className="font-semibold text-sm text-gray-800 truncate">{post.title}</h2>
-            <span className="ml-auto text-xs text-gray-400 shrink-0">
+            <h2 className="font-semibold text-sm text-dark-text truncate">{post.title}</h2>
+            <span className="ml-auto text-xs text-dark-muted shrink-0">
               {post.comment_count} 评论
             </span>
           </div>
         </div>
       )}
 
-      <Link to="/" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-4">
+      <Link to="/" className="inline-flex items-center gap-1 text-sm text-dark-muted hover:text-primary-500 mb-4">
         <ArrowLeft className="w-4 h-4" /> 返回首页
       </Link>
 
@@ -219,9 +219,9 @@ export default function PostDetailPage() {
         const hours = Math.floor(Math.max(0, diff) / 60);
         const mins = Math.max(0, diff) % 60;
         return (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-3 flex items-center gap-2">
-            <Trash2 className="w-4 h-4 text-red-500 shrink-0" />
-            <p className="text-sm text-red-700">
+          <div className="bg-primary-50 border border-primary-300/30 rounded-xl p-3 mb-3 flex items-center gap-2">
+            <Trash2 className="w-4 h-4 text-primary-500 shrink-0" />
+            <p className="text-sm text-primary-500">
               该帖子已被标记删除，将在 <strong>{hours}h{mins}m</strong> 后自动删除（评论同步清除）。已禁止新评论。
             </p>
           </div>
@@ -229,7 +229,7 @@ export default function PostDetailPage() {
       })()}
 
       {/* 帖子主体 */}
-      <article className={`bg-white rounded-xl border p-6 ${post.marked_for_delete_at ? 'border-red-200' : 'border-gray-200'}`}>
+      <article className={`bg-dark-card rounded-xl border p-6 ${post.marked_for_delete_at ? 'border-primary-300/30' : 'border-dark-border'}`}>
         <div className="flex items-center gap-3 mb-4">
           <Link to={`/user/${post.author_id}`}>
             {post.author ? (
@@ -243,28 +243,28 @@ export default function PostDetailPage() {
           <div>
             {post.author ? (
               <UserHoverCard user={post.author}>
-                <Link to={`/user/${post.author_id}`} className="font-medium text-gray-800 hover:text-primary">
+                <Link to={`/user/${post.author_id}`} className="font-medium text-dark-text hover:text-primary-500">
                   {post.author.username}
                 </Link>
               </UserHoverCard>
             ) : (
-              <span className="font-medium text-gray-800">用户#{post.author_id}</span>
+              <span className="font-medium text-dark-text">用户#{post.author_id}</span>
             )}
-            <p className="text-xs text-gray-400">{dayjs(post.created_at).format("YYYY-MM-DD HH:mm")}</p>
+            <p className="text-xs text-dark-muted">{dayjs(post.created_at).format("YYYY-MM-DD HH:mm")}</p>
           </div>
         </div>
 
-        <h1 ref={titleRef} className="text-2xl font-bold text-gray-900 mb-3">{post.title}</h1>
+        <h1 ref={titleRef} className="text-2xl font-bold text-dark-text mb-3">{post.title}</h1>
 
         {/* badges + 操作 */}
         <div className="flex gap-2 mb-4 flex-wrap items-center">
-          {post.is_featured && <span className="text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full">⭐ 精选</span>}
-          {post.is_rumor && <span className="text-xs bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full">⚠️ 未证实</span>}
-          {post.is_debate && <span className="text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full">🥊 约架</span>}
-          {post.is_repost && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">🔄 转发</span>}
+          {post.is_featured && <span className="text-xs bg-amber-900/30 text-amber-400 px-2 py-0.5 rounded-full">⭐ 精选</span>}
+          {post.is_rumor && <span className="text-xs bg-orange-900/30 text-orange-400 px-2 py-0.5 rounded-full">⚠️ 未证实</span>}
+          {post.is_debate && <span className="text-xs bg-purple-900/30 text-purple-400 px-2 py-0.5 rounded-full">🥊 约架</span>}
+          {post.is_repost && <span className="text-xs bg-dark-surface text-dark-muted px-2 py-0.5 rounded-full">🔄 转发</span>}
           {post.tags.map((t) => (
             <Link key={t} to={`/?tag=${encodeURIComponent(t)}`}
-              className="text-xs bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full hover:bg-primary-100">
+              className="text-xs bg-primary-50 text-primary-600 px-2 py-0.5 rounded-full hover:bg-primary-100">
               #{t}
             </Link>
           ))}
@@ -274,8 +274,8 @@ export default function PostDetailPage() {
               onClick={handleFeature}
               className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-colors ${
                 post.is_featured
-                  ? "bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100"
-                  : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-primary-50 hover:text-primary-600"
+                  ? "bg-amber-900/30 border-amber-800 text-amber-400 hover:bg-amber-900/50"
+                  : "bg-dark-surface border-dark-border text-dark-muted hover:bg-primary-50 hover:text-primary-500"
               }`}
               title={post.is_featured ? "取消精选" : "设为精选"}
             >
@@ -285,8 +285,8 @@ export default function PostDetailPage() {
               onClick={handleMarkDelete}
               className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-colors ${
                 post.marked_for_delete_at
-                  ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
-                  : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600"
+                  ? "bg-primary-50 border-primary-300/30 text-primary-500 hover:bg-primary-100"
+                  : "bg-dark-surface border-dark-border text-dark-muted hover:bg-primary-50 hover:text-primary-500"
               }`}
               title={post.marked_for_delete_at ? "取消删除标记" : "标记删除（24h后自动删除）"}
             >
@@ -306,7 +306,7 @@ export default function PostDetailPage() {
               <div className="flex justify-end mb-2">
                 <button
                   onClick={() => setShowRaw(!showRaw)}
-                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary transition-colors"
+                  className="flex items-center gap-1 text-xs text-dark-muted hover:text-primary-500 transition-colors"
                 >
                   {showRaw ? <Code className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
                   {showRaw ? "Markdown 渲染" : "查看原文"}
@@ -314,17 +314,17 @@ export default function PostDetailPage() {
               </div>
             )}
             {showRaw ? (
-              <pre className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 rounded-lg p-4 overflow-x-auto">{post.content}</pre>
+              <pre className="text-sm text-dark-text whitespace-pre-wrap bg-dark-surface rounded-lg p-4 overflow-x-auto">{post.content}</pre>
             ) : (
-              <MarkdownContent content={post.content} className="text-gray-700 leading-relaxed" />
+              <MarkdownContent content={post.content} className="text-dark-text leading-relaxed" />
             )}
           </div>
         )}
 
         {/* 投票 */}
         {post.poll && (
-          <div className="mt-4 bg-blue-50 rounded-lg p-4">
-            <h4 className="font-medium text-sm text-blue-800 flex items-center gap-1 mb-3">
+          <div className="mt-4 bg-blue-900/20 rounded-lg p-4 border border-blue-900/30">
+            <h4 className="font-medium text-sm text-blue-400 flex items-center gap-1 mb-3">
               <BarChart3 className="w-4 h-4" /> 投票（{post.poll.total_votes} 票）
             </h4>
             <div className="space-y-2">
@@ -335,12 +335,12 @@ export default function PostDetailPage() {
                   <button
                     key={idx}
                     onClick={() => handleVote(idx)}
-                    className="w-full text-left bg-white border border-blue-200 rounded-lg px-4 py-2 hover:bg-blue-50 transition-colors relative overflow-hidden"
+                    className="w-full text-left bg-dark-surface border border-dark-border rounded-lg px-4 py-2 hover:bg-dark-hover transition-colors relative overflow-hidden"
                   >
-                    <div className="absolute left-0 top-0 h-full bg-blue-100" style={{ width: `${pct}%` }} />
+                    <div className="absolute left-0 top-0 h-full bg-blue-900/30" style={{ width: `${pct}%` }} />
                     <div className="relative flex justify-between">
                       <span className="text-sm">{opt}</span>
-                      <span className="text-xs text-blue-600 font-medium">{pct}% ({votes})</span>
+                      <span className="text-xs text-blue-400 font-medium">{pct}% ({votes})</span>
                     </div>
                   </button>
                 );
@@ -350,7 +350,7 @@ export default function PostDetailPage() {
         )}
 
         {/* 统计 */}
-        <div className="flex items-center gap-5 mt-6 pt-4 border-t border-gray-100 text-sm text-gray-400">
+        <div className="flex items-center gap-5 mt-6 pt-4 border-t border-dark-border text-sm text-dark-muted">
           <span className="flex items-center gap-1"><Heart className="w-4 h-4" /> {post.like_count}</span>
           <span className="flex items-center gap-1"><MessageCircle className="w-4 h-4" /> {post.comment_count}</span>
           <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> {post.view_count}</span>
@@ -358,20 +358,20 @@ export default function PostDetailPage() {
       </article>
 
       {/* 评论区 */}
-      <section className="bg-white rounded-xl border border-gray-200 mt-4 p-6">
+      <section className="bg-dark-card rounded-xl border border-dark-border mt-4 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-800">评论 ({commentTotal})</h3>
+          <h3 className="font-semibold text-dark-text">评论 ({commentTotal})</h3>
           {!post.marked_for_delete_at && commentTotal > 0 && (
             <div className="flex items-center gap-1 text-xs">
-              <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />
+              <ArrowUpDown className="w-3.5 h-3.5 text-dark-muted" />
               {(["mixed", "likes", "latest"] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setCommentSort(s)}
                   className={`px-2 py-0.5 rounded-full transition-colors ${
                     commentSort === s
-                      ? "bg-primary-50 text-primary-600 font-medium"
-                      : "text-gray-400 hover:text-gray-600"
+                      ? "bg-primary-50 text-primary-500 font-medium"
+                      : "text-dark-muted hover:text-dark-text"
                   }`}
                 >
                   {{ mixed: "综合", likes: "最热", latest: "最新" }[s]}
@@ -381,12 +381,12 @@ export default function PostDetailPage() {
           )}
         </div>
         {post.marked_for_delete_at ? (
-          <p className="text-sm text-red-400 py-8 text-center">该帖子已被标记删除，评论功能已禁用</p>
+          <p className="text-sm text-primary-500 py-8 text-center">该帖子已被标记删除，评论功能已禁用</p>
         ) : comments.length === 0 && !commentLoading ? (
-          <p className="text-sm text-gray-400 py-8 text-center">暂无评论</p>
+          <p className="text-sm text-dark-muted py-8 text-center">暂无评论</p>
         ) : (
           <>
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-dark-border">
               {comments.map((c) => (
                 <CommentTree key={c.id} comment={c} maxDepth={3} onLike={handleCommentLike} />
               ))}
@@ -396,7 +396,7 @@ export default function PostDetailPage() {
               <button
                 onClick={handleLoadMore}
                 disabled={commentLoading}
-                className="w-full mt-4 py-2.5 text-sm text-gray-500 hover:text-primary-600 bg-gray-50 hover:bg-primary-50 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                className="w-full mt-4 py-2.5 text-sm text-dark-muted hover:text-primary-500 bg-dark-surface hover:bg-primary-50 rounded-lg transition-colors flex items-center justify-center gap-1.5"
               >
                 {commentLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -410,7 +410,7 @@ export default function PostDetailPage() {
             )}
             {commentLoading && comments.length === 0 && (
               <div className="flex justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                <Loader2 className="w-6 h-6 animate-spin text-dark-muted" />
               </div>
             )}
           </>

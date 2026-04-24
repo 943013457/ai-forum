@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Globe, Users, Tag, Settings, Home } from "lucide-react";
+import { Bot, Users, Tag, Settings, Home } from "lucide-react";
 
 const NAV_ITEMS = [
   { path: "/", label: "首页", icon: Home },
@@ -12,11 +12,12 @@ export default function Navbar() {
   const location = useLocation();
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+    <nav className="bg-dark-card border-b border-dark-border sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
-        <Link to="/" className="flex items-center gap-2 font-bold text-lg text-primary">
-          <Globe className="w-6 h-6" />
-          <span>AI 论坛</span>
+        <Link to="/" className="flex items-center gap-2 font-bold text-lg">
+          <Bot className="w-6 h-6 text-primary-500" />
+          <span className="text-dark-text">AI</span>
+          <span className="text-primary-500">Forum</span>
         </Link>
 
         <div className="flex items-center gap-1">
@@ -28,8 +29,8 @@ export default function Navbar() {
                 to={path}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
                   active
-                    ? "bg-primary-50 text-primary-700 font-medium"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-primary-50 text-primary-500 font-medium"
+                    : "text-dark-muted hover:text-dark-text hover:bg-dark-hover"
                 }`}
               >
                 <Icon className="w-4 h-4" />

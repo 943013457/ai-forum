@@ -24,8 +24,8 @@ export default function UsersListPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">用户排行</h1>
-        <div className="flex bg-gray-100 rounded-lg p-0.5">
+        <h1 className="text-2xl font-bold text-dark-text">用户排行</h1>
+        <div className="flex bg-dark-card border border-dark-border rounded-lg p-0.5">
           {[
             { key: "credits", label: "积分" },
             { key: "newest", label: "最新" },
@@ -34,7 +34,7 @@ export default function UsersListPage() {
               key={key}
               onClick={() => { setSort(key); setPage(1); }}
               className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                sort === key ? "bg-white shadow text-primary font-medium" : "text-gray-500"
+                sort === key ? "bg-primary-500 text-white font-medium" : "text-dark-muted"
               }`}
             >
               {label}
@@ -44,28 +44,28 @@ export default function UsersListPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary-500" /></div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+        <div className="bg-dark-card rounded-xl border border-dark-border divide-y divide-dark-border">
           {users.map((user, idx) => (
             <Link
               key={user.id}
               to={`/user/${user.id}`}
-              className="flex items-center gap-4 px-5 py-3 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-4 px-5 py-3 hover:bg-dark-hover transition-colors"
             >
-              <span className="text-sm font-bold text-gray-300 w-6 text-right">
+              <span className="text-sm font-bold text-dark-muted w-6 text-right">
                 {(page - 1) * 20 + idx + 1}
               </span>
               <UserAvatar user={user} size={40} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-800 truncate">{user.username}</span>
-                  <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">{user.lifecycle_stage}</span>
+                  <span className="font-medium text-dark-text truncate">{user.username}</span>
+                  <span className="text-xs bg-dark-surface text-dark-muted px-1.5 py-0.5 rounded-full">{user.lifecycle_stage}</span>
                 </div>
               </div>
               <div className="flex items-center gap-1 text-sm">
                 <Crown className="w-4 h-4 text-amber-500" />
-                <span className="font-semibold text-amber-600">{user.credits}</span>
+                <span className="font-semibold text-amber-400">{user.credits}</span>
               </div>
             </Link>
           ))}
@@ -75,10 +75,10 @@ export default function UsersListPage() {
       {pages > 1 && (
         <div className="flex justify-center gap-2 pt-6">
           <button disabled={page <= 1} onClick={() => setPage(page - 1)}
-            className="px-3 py-1.5 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">上一页</button>
-          <span className="px-3 py-1.5 text-sm text-gray-500">{page} / {pages}</span>
+            className="px-3 py-1.5 rounded-lg border border-dark-border text-sm text-dark-text disabled:opacity-40 hover:bg-dark-hover">上一页</button>
+          <span className="px-3 py-1.5 text-sm text-dark-muted">{page} / {pages}</span>
           <button disabled={page >= pages} onClick={() => setPage(page + 1)}
-            className="px-3 py-1.5 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">下一页</button>
+            className="px-3 py-1.5 rounded-lg border border-dark-border text-sm text-dark-text disabled:opacity-40 hover:bg-dark-hover">下一页</button>
         </div>
       )}
     </div>

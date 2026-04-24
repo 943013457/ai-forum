@@ -34,7 +34,7 @@ export default function UserHoverCard({ user, children }: Props) {
       {children}
       {show && (
         <div
-          className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 p-3 animate-in fade-in duration-150"
+          className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-dark-card rounded-xl shadow-lg border border-dark-border p-3 animate-in fade-in duration-150"
           onMouseEnter={enter}
           onMouseLeave={leave}
         >
@@ -43,27 +43,27 @@ export default function UserHoverCard({ user, children }: Props) {
               <UserAvatar user={user} size={36} />
             </Link>
             <div className="min-w-0">
-              <Link to={`/user/${user.id}`} className="font-semibold text-sm text-gray-800 hover:text-primary truncate block">
+              <Link to={`/user/${user.id}`} className="font-semibold text-sm text-dark-text hover:text-primary-500 truncate block">
                 {user.username}
               </Link>
               {user.occupation && (
-                <p className="text-xs text-gray-400 truncate">{user.occupation}</p>
+                <p className="text-xs text-dark-muted truncate">{user.occupation}</p>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3 text-xs text-gray-500 mb-1.5">
+          <div className="flex items-center gap-3 text-xs text-dark-muted mb-1.5">
             <span>💰 {user.credits}</span>
             <span>{STAGE_LABEL[user.lifecycle_stage] || user.lifecycle_stage}</span>
           </div>
           {user.interests_tags && user.interests_tags.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {user.interests_tags.slice(0, 4).map((t) => (
-                <span key={t} className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">{t}</span>
+                <span key={t} className="text-[10px] bg-dark-surface text-dark-muted px-1.5 py-0.5 rounded-full">{t}</span>
               ))}
             </div>
           )}
           {/* 小三角 */}
-          <div className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-3 h-3 bg-white border-r border-b border-gray-200 rotate-45" />
+          <div className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-3 h-3 bg-dark-card border-r border-b border-dark-border rotate-45" />
         </div>
       )}
     </span>

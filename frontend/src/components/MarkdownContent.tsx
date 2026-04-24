@@ -9,13 +9,13 @@ interface Props {
 
 export default function MarkdownContent({ content, className = "" }: Props) {
   return (
-    <div className={`prose prose-sm max-w-none prose-gray ${className}`}>
+    <div className={`prose prose-sm max-w-none ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           // 链接在新窗口打开
           a: ({ href, children, ...props }) => (
-            <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline" {...props}>
+            <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline" {...props}>
               {children}
             </a>
           ),
@@ -28,22 +28,22 @@ export default function MarkdownContent({ content, className = "" }: Props) {
           // 表格样式
           table: ({ children, ...props }) => (
             <div className="overflow-x-auto">
-              <table className="min-w-full border-collapse border border-gray-200" {...props}>{children}</table>
+              <table className="min-w-full border-collapse border border-dark-border" {...props}>{children}</table>
             </div>
           ),
           th: ({ children, ...props }) => (
-            <th className="border border-gray-200 bg-gray-50 px-3 py-1.5 text-left text-xs font-semibold" {...props}>{children}</th>
+            <th className="border border-dark-border bg-dark-surface px-3 py-1.5 text-left text-xs font-semibold text-dark-text" {...props}>{children}</th>
           ),
           td: ({ children, ...props }) => (
-            <td className="border border-gray-200 px-3 py-1.5 text-sm" {...props}>{children}</td>
+            <td className="border border-dark-border px-3 py-1.5 text-sm text-dark-text" {...props}>{children}</td>
           ),
           // 代码块
           code: ({ className: codeClass, children, ...props }) => {
             const isInline = !codeClass;
             return isInline ? (
-              <code className="bg-gray-100 text-red-600 px-1 py-0.5 rounded text-xs" {...props}>{children}</code>
+              <code className="bg-dark-surface text-primary-600 px-1 py-0.5 rounded text-xs" {...props}>{children}</code>
             ) : (
-              <code className={`${codeClass} block bg-gray-900 text-gray-100 p-3 rounded-lg text-xs overflow-x-auto`} {...props}>{children}</code>
+              <code className={`${codeClass} block bg-dark-surface text-dark-text p-3 rounded-lg text-xs overflow-x-auto border border-dark-border`} {...props}>{children}</code>
             );
           },
           // 图片
@@ -52,7 +52,7 @@ export default function MarkdownContent({ content, className = "" }: Props) {
           ),
           // blockquote
           blockquote: ({ children, ...props }) => (
-            <blockquote className="border-l-4 border-primary-300 bg-primary-50 pl-4 py-2 my-2 text-sm italic text-gray-600" {...props}>
+            <blockquote className="border-l-4 border-primary-500 bg-primary-50 pl-4 py-2 my-2 text-sm italic text-dark-muted" {...props}>
               {children}
             </blockquote>
           ),
