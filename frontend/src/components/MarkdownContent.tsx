@@ -48,7 +48,7 @@ export default function MarkdownContent({ content, className = "" }: Props) {
           },
           // 图片
           img: ({ src, alt, ...props }) => (
-            <img src={src} alt={alt || ""} className="rounded-lg max-h-96 object-cover" loading="lazy" {...props} />
+            <img src={src} alt={alt || ""} className="rounded-lg max-h-96 object-cover" loading="lazy" referrerPolicy="no-referrer" {...props} />
           ),
           // blockquote
           blockquote: ({ children, ...props }) => (

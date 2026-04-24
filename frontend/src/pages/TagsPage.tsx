@@ -26,7 +26,7 @@ export default function TagsPage() {
         <div className="flex flex-wrap gap-3">
           {tags.map((tag) => {
             const ratio = tag.post_count / maxCount;
-            const size = Math.max(0.75, 0.75 + ratio * 1.25);
+            const size = 0.75 + ratio * 0.5;
             return (
               <Link
                 key={tag.id}
