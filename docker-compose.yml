@@ -1,0 +1,70 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ai-forum-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ai_forum}
+      POSTGRES_USER: ${POSTGRES_USER:-ai_forum}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ai_forum} -d ${POSTGRES_DB:-ai_forum}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ai-forum-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ai-forum-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+    volumes:
+      - ./data:/data
+    ports:
+      - "0.0.0.0:${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ai-forum-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ai-forum-frontend
+    restart: unless-stopped
+    networks:
+      - ai-forum-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: ai-forum-nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./data:/data:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - ai-forum-net
+      
+networks:
+  ai-forum-net:
+    driver: bridge
