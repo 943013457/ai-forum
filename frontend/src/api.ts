@@ -37,8 +37,11 @@ export const getUserDebates = (id: number) =>
   request<Debate[]>(`/users/${id}/debates`);
 
 // ==================== 评论 ====================
-export const getComments = (postId: number, page = 1) =>
-  request<PaginatedResponse>(`/comments/post/${postId}?page=${page}&page_size=50`);
+export const getComments = (postId: number, page = 1, sort = "mixed", pageSize = 20) =>
+  request<PaginatedResponse>(`/posts/${postId}/comments?page=${page}&page_size=${pageSize}&sort=${sort}`);
+
+export const likeComment = (postId: number, commentId: number) =>
+  request<{ ok: boolean; like_count: number }>(`/posts/${postId}/comments/${commentId}/like`, { method: "POST" });
 
 // ==================== 标签 ====================
 export const getTags = (sort = "count", limit = 50) =>
@@ -140,6 +143,7 @@ export interface CommentItem {
   author_id: number;
   content: string;
   parent_comment_id: number | null;
+  like_count: number;
   created_at: string;
   author: UserBrief | null;
   replies: CommentItem[];

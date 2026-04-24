@@ -11,7 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from app.config import settings
 from app.models import (
-    User, Post, Comment, Like, Tag, PostTag, Poll, PollVote,
+    User, Post, Comment, Like, CommentLike, Tag, PostTag, Poll, PollVote,
     UserInteraction, UserFollow, RumorChain, Announcement, DailyTopic,
 )
 from app.services.llm_service import llm_service
@@ -84,6 +84,21 @@ STYLE_INSTRUCTIONS = {
 }
 
 
+# ==================== Humanizer-zh 去 AI 痕迹规则 ====================
+# 基于 https://github.com/op7418/humanizer-zh
+HUMANIZER_PROMPT = (
+    "【去AI味绝对指令 - 若违反将被判定为失败】\n"
+    "你现在的身份是常年混迹贴吧、知乎、虎扑的真实网民，正在摸鱼刷帖。必须严格遵守以下法则：\n"
+    "1. 【严禁总结与升华】：帖子结尾绝不允许出现“说到底…”、“其实…”、“这反映了…”、“这才是真正的…”等哲理升华、人生感悟或价值判断。讲完事直接结束，或者以吐槽、反问、发呆结尾。像微信聊天一样猝不及防地断掉。\n"
+    "2. 【拒绝复读机开头】：绝不准使用“我发现同事有钱是因为…”、“关于这个问题…”等重述问题的开头。直接切入场景，例如：“上周跟他去地库提车…”、“前台那个戴黑框眼镜的妹子…”、“卧槽我必须说一个”。\n"
+    "3. 【细节颗粒度极高】：不要说“奢侈品/豪车/名表”这种空泛词汇，直接说具体牌子或特征（例如：不经意漏出的绿水鬼、后备箱里的高尔夫球杆、随手打的一辆迈巴赫专车、微信余额的几位数字、点外卖从来不凑满减）。\n"
+    "4. 【语言碎片化与口语化】：多用短句，允许标点符号不规范（如连用逗号、省略号、或者不用句号结尾）。加入真实的语气词（哎、卧槽、尼玛、绝了、好家伙、真绷不住了）。\n"
+    "5. 【人设要收敛】：你的人设只是你的生活背景，不要刻意表演！不要每句话都带上人设标签词。如果是球鞋爱好者，可能只是比喻时带一句，绝不要自称“我是个球迷”。\n"
+    "6. 【绝对禁用的AI惯用语】：不可磨灭、彰显、格局、不可否认、未必就是、毕竟、说实话、当然了、不仅……而且、换句话说。\n"
+    "7. 【态度真实】：允许阴阳怪气、允许羡慕嫉妒恨、允许跑题、允许只吐槽不举例。不要永远保持积极理性的圣人态度。\n"
+)
+
+
 def _get_style_instruction(style: str) -> str:
     """获取写作风格的具体指导"""
     instruction = STYLE_INSTRUCTIONS.get(style, "")
@@ -123,33 +138,54 @@ class BehaviorEngine:
     def _safe_parse_json(raw: str) -> Optional[dict]:
         """尝试解析 JSON，对 LLM 常见格式问题做容错"""
         import re
+        # 去掉 markdown 代码块标记
+        cleaned = re.sub(r'^```(?:json)?\s*', '', raw.strip())
+        cleaned = re.sub(r'\s*```$', '', cleaned.strip())
+
         # 先尝试直接解析
         try:
-            return json.loads(raw)
+            return json.loads(cleaned)
         except json.JSONDecodeError:
             pass
 
         # 提取第一个 {...} 块
-        match = re.search(r'\{.*\}', raw, re.DOTALL)
+        match = re.search(r'\{.*\}', cleaned, re.DOTALL)
         if match:
             try:
                 return json.loads(match.group())
             except json.JSONDecodeError:
                 pass
 
-        # 修复未加引号的值: "key": value → "key": "value"
-        fixed = re.sub(
-            r'("(?:title|content|summary)")\s*:\s*(?!")(.*?)(?=\s*,\s*"|}\s*$)',
-            lambda m: f'{m.group(1)}: "{m.group(2).strip()}"',
-            raw,
-            flags=re.DOTALL,
-        )
+        # 尝试 json_repair 库
         try:
-            return json.loads(fixed)
-        except json.JSONDecodeError:
+            from json_repair import repair_json
+            repaired = repair_json(cleaned, return_objects=True)
+            if isinstance(repaired, dict):
+                return repaired
+        except ImportError:
+            pass
+        except Exception:
             pass
 
-        logger.warning(f"JSON 解析失败 | raw={raw[:200]}")
+        # 最后手段：用正则按字段逐个提取
+        result = {}
+        for key in ("title", "content", "summary"):
+            # 匹配 "key": "value" 或 "key": value（无引号）
+            pat = rf'"{key}"\s*:\s*"((?:[^"\\]|\\.)*)"|"{key}"\s*:\s*([^",\}}\]]+)'
+            m = re.search(pat, cleaned, re.DOTALL)
+            if m:
+                val = (m.group(1) or m.group(2) or "").strip()
+                # 还原转义序列
+                val = val.replace("\\n", "\n").replace("\\t", "\t").replace('\\"', '"')
+                result[key] = val
+        # 提取 tags
+        tags_m = re.search(r'"tags"\s*:\s*\[(.*?)\]', cleaned, re.DOTALL)
+        if tags_m:
+            result["tags"] = re.findall(r'"([^"]+)"', tags_m.group(1))
+        if result.get("title"):
+            return result
+
+        logger.warning(f"JSON 解析失败 | raw={raw[:300]}")
         return None
 
     async def _ensure_avatar(self, user: User):
@@ -193,6 +229,9 @@ class BehaviorEngine:
             if random.random() < settings.LIKE_BASE_PROBABILITY:
                 await self._do_like(db, user, post)
                 stats["likes"] += 1
+
+            # 浏览帖子时随机给评论点赞
+            await self._do_comment_likes(db, user, post)
 
             if random.random() < settings.COMMENT_PROBABILITY:
                 if getattr(post, 'marked_for_delete_at', None):
@@ -300,6 +339,31 @@ class BehaviorEngine:
         db.add(like)
         post.like_count += 1
 
+    async def _do_comment_likes(self, db: AsyncSession, user: User, post: Post):
+        """浏览帖子时，随机给几条评论点赞"""
+        if post.comment_count == 0:
+            return
+        stmt = (
+            select(Comment)
+            .where(Comment.post_id == post.id)
+            .order_by(func.random())
+            .limit(3)
+        )
+        result = await db.execute(stmt)
+        for comment in result.scalars().all():
+            if comment.author_id == user.id:
+                continue
+            if random.random() < 0.3:
+                exists = (await db.execute(
+                    select(CommentLike).where(
+                        CommentLike.comment_id == comment.id,
+                        CommentLike.user_id == user.id,
+                    )
+                )).scalar_one_or_none()
+                if not exists:
+                    db.add(CommentLike(comment_id=comment.id, user_id=user.id))
+                    comment.like_count += 1
+
     async def _generate_comment(
         self, db: AsyncSession, user: User, post: Post,
         image_desc: Optional[str] = None,
@@ -345,6 +409,7 @@ class BehaviorEngine:
             f"\n【评论情绪引导】\n{attitude}\n"
             f"{time_ctx}{mood_ctx}\n"
             f"{lang_instruction}\n"
+            f"{HUMANIZER_PROMPT}\n"
             f"请{target_desc}（{settings.COMMENT_MIN_LENGTH}-{settings.COMMENT_MAX_LENGTH}字），要严格符合上述写作风格。"
             "禁止笼统地夸奖或表扬，必须有自己的独立观点。"
             "只输出评论内容，不要输出其他任何内容。不要输出'回复 @xxx：'前缀。"
@@ -413,6 +478,7 @@ class BehaviorEngine:
             f"\n【写作风格要求】\n{style_instruction}\n"
             f"{time_ctx}{mood_ctx}{announcement_ctx}{topic_ctx}\n"
             f"{lang_instruction}\n"
+            f"{HUMANIZER_PROMPT}\n"
             "请发表一篇新帖子，正文内容必须严格符合上述写作风格。以 JSON 格式输出：\n"
             '{"title": "帖子标题", "content": "帖子正文(' + str(settings.POST_MIN_LENGTH) + '-' + str(settings.POST_MAX_LENGTH) + '字，分3-5个自然段，段落之间用\\n\\n换行)", '
             '"summary": "一句话摘要(不超过50字)", '
@@ -502,7 +568,7 @@ class BehaviorEngine:
         repost = Post(
             author_id=user.id,
             title=f"转发: {original.title}",
-            content=f"【转发自 @{original.author_id}】{original.summary or original.title}",
+            content=f"【转发自 @{original.author.username if original.author else original.author_id}(uid:{original.author_id})】{original.summary or original.title}",
             summary=original.summary,
             is_repost=True,
             repost_of=original.id,

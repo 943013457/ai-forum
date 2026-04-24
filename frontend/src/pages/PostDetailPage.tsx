@@ -1,11 +1,11 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getPost, votePoll, toggleFeatured, markForDelete, unmarkForDelete } from "../api";
+import { getPost, getComments, likeComment, votePoll, toggleFeatured, markForDelete, unmarkForDelete } from "../api";
 import type { PostDetail, CommentItem } from "../api";
 import UserAvatar from "../components/UserAvatar";
 import UserHoverCard from "../components/UserHoverCard";
 import MarkdownContent from "../components/MarkdownContent";
-import { Heart, MessageCircle, Eye, ArrowLeft, Loader2, BarChart3, Star, FileText, Code, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Eye, ArrowLeft, Loader2, BarChart3, Star, FileText, Code, Trash2, ThumbsUp, ArrowUpDown, ChevronDown } from "lucide-react";
 import dayjs from "dayjs";
 
 /** 将评论文本中的 @用户名 渲染为可点击链接 */
@@ -31,7 +31,10 @@ function RenderCommentContent({ content, comment }: { content: string; comment: 
   return <MarkdownContent content={content} className="text-sm text-gray-700 mt-1" />;
 }
 
-function CommentTree({ comment, depth = 0, maxDepth = 3 }: { comment: CommentItem; depth?: number; maxDepth?: number }) {
+function CommentTree({ comment, depth = 0, maxDepth = 3, onLike }: {
+  comment: CommentItem; depth?: number; maxDepth?: number;
+  onLike: (commentId: number) => void;
+}) {
   return (
     <div className={`${depth > 0 ? "ml-8 border-l-2 border-gray-100 pl-4" : ""}`}>
       <div className="flex gap-3 py-3">
@@ -58,11 +61,20 @@ function CommentTree({ comment, depth = 0, maxDepth = 3 }: { comment: CommentIte
             <span className="text-xs text-gray-400">{dayjs(comment.created_at).format("MM-DD HH:mm")}</span>
           </div>
           <RenderCommentContent content={comment.content} comment={comment} />
+          {/* 点赞按钮 */}
+          <button
+            onClick={() => onLike(comment.id)}
+            className={`mt-1.5 flex items-center gap-1 text-xs transition-colors ${
+              comment.like_count > 0 ? "text-primary-500" : "text-gray-400 hover:text-primary-500"
+            }`}
+          >
+            <ThumbsUp className="w-3.5 h-3.5" />
+            {comment.like_count > 0 && <span>{comment.like_count}</span>}
+          </button>
         </div>
       </div>
-      {/* 最多显示 maxDepth 层嵌套 */}
       {depth < maxDepth - 1 && comment.replies?.map((r) => (
-        <CommentTree key={r.id} comment={r} depth={depth + 1} maxDepth={maxDepth} />
+        <CommentTree key={r.id} comment={r} depth={depth + 1} maxDepth={maxDepth} onLike={onLike} />
       ))}
       {depth >= maxDepth - 1 && comment.replies && comment.replies.length > 0 && (
         <p className="text-xs text-gray-400 ml-8 py-1">
@@ -81,11 +93,39 @@ export default function PostDetailPage() {
   const [stickyVisible, setStickyVisible] = useState(false);
   const titleRef = useRef<HTMLHeadingElement>(null);
 
+  // 评论分页状态
+  const [comments, setComments] = useState<CommentItem[]>([]);
+  const [commentSort, setCommentSort] = useState<"mixed" | "likes" | "latest">("mixed");
+  const [commentPage, setCommentPage] = useState(1);
+  const [commentTotal, setCommentTotal] = useState(0);
+  const [commentPages, setCommentPages] = useState(0);
+  const [commentLoading, setCommentLoading] = useState(false);
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);
     getPost(Number(id)).then((p) => { setPost(p); setLoading(false); });
   }, [id]);
+
+  // 加载评论
+  const loadComments = useCallback(async (page: number, sort: string, append = false) => {
+    if (!id) return;
+    setCommentLoading(true);
+    try {
+      const res = await getComments(Number(id), page, sort);
+      const items = res.items as CommentItem[];
+      setComments((prev) => append ? [...prev, ...items] : items);
+      setCommentTotal(res.total);
+      setCommentPages(res.pages);
+      setCommentPage(page);
+    } catch { /* ignore */ }
+    setCommentLoading(false);
+  }, [id]);
+
+  // 帖子加载后加载首页评论
+  useEffect(() => {
+    if (post) loadComments(1, commentSort);
+  }, [post?.id, commentSort]);
 
   // 滚动监听：标题滚出视口时显示吸顶
   useEffect(() => {
@@ -121,6 +161,27 @@ export default function PostDetailPage() {
     }
   };
 
+  // 评论点赞（递归更新嵌套评论的 like_count）
+  const handleCommentLike = async (commentId: number) => {
+    if (!post) return;
+    try {
+      const res = await likeComment(post.id, commentId);
+      const updateLike = (list: CommentItem[]): CommentItem[] =>
+        list.map((c) =>
+          c.id === commentId
+            ? { ...c, like_count: res.like_count }
+            : { ...c, replies: updateLike(c.replies || []) }
+        );
+      setComments((prev) => updateLike(prev));
+    } catch { /* ignore */ }
+  };
+
+  const handleLoadMore = () => {
+    if (commentPage < commentPages) {
+      loadComments(commentPage + 1, commentSort, true);
+    }
+  };
+
   if (loading) {
     return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
@@ -128,7 +189,6 @@ export default function PostDetailPage() {
     return <div className="text-center py-20 text-gray-400">帖子不存在</div>;
   }
 
-  const topComments = post.comments?.filter((c) => !c.parent_comment_id) ?? [];
   const isHotNews = post.author?.username === "热点快讯";
 
   return (
@@ -299,17 +359,61 @@ export default function PostDetailPage() {
 
       {/* 评论区 */}
       <section className="bg-white rounded-xl border border-gray-200 mt-4 p-6">
-        <h3 className="font-semibold text-gray-800 mb-4">评论 ({topComments.length})</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-gray-800">评论 ({commentTotal})</h3>
+          {!post.marked_for_delete_at && commentTotal > 0 && (
+            <div className="flex items-center gap-1 text-xs">
+              <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />
+              {(["mixed", "likes", "latest"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setCommentSort(s)}
+                  className={`px-2 py-0.5 rounded-full transition-colors ${
+                    commentSort === s
+                      ? "bg-primary-50 text-primary-600 font-medium"
+                      : "text-gray-400 hover:text-gray-600"
+                  }`}
+                >
+                  {{ mixed: "综合", likes: "最热", latest: "最新" }[s]}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         {post.marked_for_delete_at ? (
           <p className="text-sm text-red-400 py-8 text-center">该帖子已被标记删除，评论功能已禁用</p>
-        ) : topComments.length === 0 ? (
+        ) : comments.length === 0 && !commentLoading ? (
           <p className="text-sm text-gray-400 py-8 text-center">暂无评论</p>
         ) : (
-          <div className="divide-y divide-gray-100">
-            {topComments.map((c) => (
-              <CommentTree key={c.id} comment={c} maxDepth={3} />
-            ))}
-          </div>
+          <>
+            <div className="divide-y divide-gray-100">
+              {comments.map((c) => (
+                <CommentTree key={c.id} comment={c} maxDepth={3} onLike={handleCommentLike} />
+              ))}
+            </div>
+            {/* 加载更多 */}
+            {commentPage < commentPages && (
+              <button
+                onClick={handleLoadMore}
+                disabled={commentLoading}
+                className="w-full mt-4 py-2.5 text-sm text-gray-500 hover:text-primary-600 bg-gray-50 hover:bg-primary-50 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+              >
+                {commentLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4" />
+                    加载更多评论（{comments.length}/{commentTotal}）
+                  </>
+                )}
+              </button>
+            )}
+            {commentLoading && comments.length === 0 && (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>

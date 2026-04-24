@@ -107,7 +107,7 @@ class ImageService:
         """根据权重随机选择头像 API 参数"""
         category = random.choices(
             ["bq", "landscape", "furry"],
-            weights=[0.80, 0.10, 0.10],
+            weights=[0.50, 0.30, 0.20],
             k=1,
         )[0]
 

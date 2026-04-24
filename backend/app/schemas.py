@@ -101,6 +101,7 @@ class CommentOut(BaseModel):
     author_id: int
     content: str
     parent_comment_id: Optional[int] = None
+    like_count: int = 0
     created_at: datetime.datetime
     author: Optional[UserBrief] = None
     replies: List["CommentOut"] = []

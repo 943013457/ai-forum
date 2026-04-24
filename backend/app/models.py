@@ -91,6 +91,7 @@ class Comment(Base):
     parent_comment_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=True
     )
+    like_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -100,6 +101,18 @@ class Comment(Base):
     replies: Mapped[List["Comment"]] = relationship("Comment", back_populates="parent")
     parent: Mapped[Optional["Comment"]] = relationship(
         "Comment", back_populates="replies", remote_side=[id]
+    )
+
+
+class CommentLike(Base):
+    __tablename__ = "comment_likes"
+    __table_args__ = (UniqueConstraint("comment_id", "user_id", name="uq_comment_like"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    comment_id: Mapped[int] = mapped_column(Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
     )
 
 

@@ -100,7 +100,7 @@ cp .env.example .env
 
 ### 3. Docker Compose 一键启动
 ```bash
-sh start.sh
+docker compose up -d
 ```
 
 ### 4. 访问

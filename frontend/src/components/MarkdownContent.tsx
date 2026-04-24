@@ -64,24 +64,39 @@ export default function MarkdownContent({ content, className = "" }: Props) {
   );
 }
 
-/** 将文本中的 #标签 转为 Link */
+/** 将文本中的 #标签 和 @用户 转为可点击链接 */
 function processHashTags(children: React.ReactNode): React.ReactNode {
   if (typeof children === "string") {
-    const parts = children.split(/(#[\u4e00-\u9fa5a-zA-Z0-9_]+)/g);
-    if (parts.length <= 1) return children;
-    return parts.map((part, i) =>
-      part.startsWith("#") ? (
-        <Link
-          key={i}
-          to={`/?tag=${encodeURIComponent(part.slice(1))}`}
-          className="text-primary-600 hover:text-primary-800 hover:underline"
-        >
-          {part}
-        </Link>
-      ) : (
-        <span key={i}>{part}</span>
-      )
-    );
+    // 匹配 #标签、@username(uid:123)、旧格式 @数字
+    const pattern = /(#[\u4e00-\u9fa5a-zA-Z0-9_]+|@([^(@\s]+)\(uid:(\d+)\)|@(\d+))/g;
+    const result: React.ReactNode[] = [];
+    let last = 0;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(children)) !== null) {
+      if (match.index > last) result.push(<span key={`t${last}`}>{children.slice(last, match.index)}</span>);
+      if (match[0].startsWith("#")) {
+        result.push(
+          <Link key={`h${match.index}`} to={`/?tag=${encodeURIComponent(match[0].slice(1))}`}
+            className="text-primary-600 hover:text-primary-800 hover:underline">{match[0]}</Link>
+        );
+      } else if (match[2] && match[3]) {
+        // @username(uid:123)
+        result.push(
+          <Link key={`u${match.index}`} to={`/user/${match[3]}`}
+            className="text-primary-500 hover:text-primary-700 hover:underline font-medium">@{match[2]}</Link>
+        );
+      } else if (match[4]) {
+        // 旧格式 @数字
+        result.push(
+          <Link key={`u${match.index}`} to={`/user/${match[4]}`}
+            className="text-primary-500 hover:text-primary-700 hover:underline font-medium">@用户#{match[4]}</Link>
+        );
+      }
+      last = match.index + match[0].length;
+    }
+    if (last === 0) return children;
+    if (last < children.length) result.push(<span key={`t${last}`}>{children.slice(last)}</span>);
+    return result;
   }
   if (Array.isArray(children)) {
     return children.map((child, i) => <span key={i}>{processHashTags(child)}</span>);
